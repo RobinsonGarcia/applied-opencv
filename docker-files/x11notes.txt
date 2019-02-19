@@ -1,0 +1,9 @@
+xhost +
+sudo docker run --rm -ti --net=host --ipc=host \
+   -e DISPLAY=$DISPLAY \
+   -v /tmp/.X11-unix:/tmp/.X11-unix \
+   opencv_gui ./sample/build/bin/opencvSample ./sample/docker.png
+
+ xhost + allows everybody to use your host x server; while the DISPLAY and X11 commands specify the Docker container to share the X11 socket and host display.
+
+https://marcosnietoblog.wordpress.com/2017/04/30/docker-image-with-opencv-with-x11-forwarding-for-gui/

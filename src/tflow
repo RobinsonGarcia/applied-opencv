@@ -1,0 +1,75 @@
+from darkflow.net.build import TFNet
+import cv2
+import os
+import sys
+
+def drawbb(frame,detected):
+    for obj in detected:
+        frame = cv2.rectangle(frame,
+                     (obj["topleft"]["x"],obj["topleft"]["y"]),
+                      (obj["bottomright"]["x"],obj["bottomright"]["y"]),
+                      (0,255,0),4)
+
+        text_x,text_y = obj["topleft"]["x"] - 10,obj["topleft"]["y"]-10
+
+        frame = cv2.putText(frame,obj["label"],(text_x,text_y),
+                    cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,0),2,cv2.LINE_AA)
+    return frame
+
+def flow(INPUT,OUTPUT,tfnet):
+    # Initialize GUI window to grab keystrokes when it has focus.
+    cv2.namedWindow("Capture")
+
+    # Initialize Capture Counter
+    cap_cnt = 0
+
+    video = cv2.VideoCapture(INPUT)
+    # Check if Camera initialized correctly
+    success = video.isOpened()
+    if success == False:
+        print('Error: Camera could not be opened')
+    else:
+        print('Success: Grabbed the camera')
+
+    while True:
+        # Read each frame in video stream
+        ret, frame = video.read()
+        frame = cv2.resize(frame,(800,500),interpolation = cv2.INTER_LINEAR)
+
+        detected = tfnet.return_predict(frame)
+        frame = drawbb(frame,detected)
+
+        # Display each frame in video stream
+        cv2.imshow("Capture", frame)
+        if not ret:
+            break
+        # Monitor keystrokes
+        k = cv2.waitKey(1)
+
+        if k & 0xFF == ord('q'):
+            # q key pressed so quit
+            print("Quitting...")
+            break
+        elif k & 0xFF == ord('c'):
+            # c key pressed so capture frame to image file
+            cap_name = "capture_{}.png".format(cap_cnt)
+            cv2.imwrite(cap_name, frame)
+            print("Saving {}!".format(cap_name))
+            # Increment Capture Counter for next frame to capture
+            cap_cnt += 1
+
+    video.release()
+    cv2.destroyAllWindows()
+
+if __name__=="__main__":
+
+    os.chdir('/darkflow')
+
+    options = {"model": "cfg/yolo.cfg", "load": "yolo.weights", "threshold": 0.5}
+
+    tfnet = TFNet(options)
+
+    INPUT = sys.argv[1]
+    OUTPUT = sys.argv[2]
+
+    flow(INPUT,OUTPUT,tfnet)
